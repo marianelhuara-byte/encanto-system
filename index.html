@@ -612,6 +612,7 @@ img{display:block;max-width:100%}
 .categories-scroll::-webkit-scrollbar{display:none}
 .cat-chip{
   flex-shrink:0;scroll-snap-align:start;
+  width:84px; /* mesmo tamanho/alinhamento para todos os cards, independente do tamanho do nome */
   display:flex;flex-direction:column;align-items:center;gap:8px;
   cursor:pointer;
 }
@@ -640,10 +641,16 @@ img{display:block;max-width:100%}
 }
 .cat-chip.active .cat-name{color:var(--grape);font-weight:700}
 .cat-name{
+  width:100%;
   font-size:11.5px;font-weight:600;color:var(--gray-600,#4B5563);
-  white-space:nowrap;letter-spacing:.1px;text-align:center;
+  letter-spacing:.1px;text-align:center;line-height:1.25;
+  /* Altura fixa (2 linhas) para todos os nomes — mesmo espaçamento vertical
+     mesmo quando o nome da categoria é curto ("Açaí") ou longo ("Cardápio de Marmitas") */
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;-webkit-box-pack:center;
+  overflow:hidden;min-height:2.5em;
 }
 @media(max-width:480px){
+  .cat-chip{width:74px}
   .cat-icon{width:70px;height:70px;padding:13px}
   .cat-icon svg{width:40px;height:40px}
   .cat-name{font-size:11px}
@@ -730,6 +737,7 @@ img{display:block;max-width:100%}
 .product-footer{display:flex;align-items:center;justify-content:space-between;margin-top:auto}
 .product-price{font-family:var(--font-head);font-size:16px;font-weight:700;color:var(--grape);letter-spacing:0}
 .product-price .old-price{font-size:12px;color:var(--gray-400);text-decoration:line-through;font-weight:400;display:block;font-family:var(--font-body)}
+.product-price .price-from-label{font-size:11px;color:var(--gray-500);font-weight:600;display:block;font-family:var(--font-body);letter-spacing:.1px}
 .add-btn{
   width:32px;height:32px;border-radius:10px;
   background:var(--grape);color:var(--white);
@@ -1211,71 +1219,91 @@ testSupabaseProducts();
 /* ── Helpers ─────────────────────────────────────────────────── */
 const fmt = v => 'R$\u00a0' + Number(v||0).toFixed(2).replace('.',',');
 const fmtDate = d => d ? new Date(d).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'}) : '-';
+/* Preço de partida — usado no card principal de produtos com múltiplos tamanhos
+   (Monte seu Copo, Batidinhas e qualquer produto futuro que siga o mesmo padrão
+   de `tamanhos`). Calcula o menor preço entre os tamanhos em vez de assumir que
+   o campo `preco` top-level já está sincronizado, evitando duplicação de regra. */
+const precoApartir = prod => (Array.isArray(prod?.tamanhos) && prod.tamanhos.length>0)
+  ? Math.min(...prod.tamanhos.map(t=>Number(t.preco)||0))
+  : Number(prod?.preco_promo || prod?.preco || 0);
 const CAT_EMOJI = {
   'combo marmitex + açaí':'🎁','combos':'🎁',
-  'promoções do dia':'🔥','promoção do dia':'🔥','promoção':'🔥',
   'cardápio de marmitas':'🍱','marmitas':'🍱',
-  'cardápio açaí':'🍇','açaí':'🍧',
+  'açaí':'🍧','copos prontos':'🍧',
+  'monte seu copo':'🍧','batidinhas':'🥤',
   'pedido fitness':'💪','bebidas':'🧃',
 };
 const catEmoji = (nome='') => CAT_EMOJI[(nome||'').toLowerCase()] || '🍽️';
 
 /* ── Mock Data ───────────────────────────────────────────────── */
 const MOCK_CATS = [
+  /* Ordem fixa solicitada (8 categorias):
+     1 Cardápio de Marmitas, 2 Destaques, 3 Copos Prontos, 4 Monte seu Copo,
+     5 Batidinhas, 6 Combos, 7 Pedido Fitness, 8 Bebidas.
+     "Açaí" foi renomeada para "Copos Prontos" (mesmo id 'c4', só o nome mudou).
+     "Monte seu Copo" (c11) e "Batidinhas" (c12) são categorias independentes — os
+     produtos já foram migrados para elas (ver MOCK_PRODS) e cada uma é renderizada
+     pela mesma seção genérica usada por todas as outras categorias, sem agrupamento
+     especial (a antiga lógica de 3 blocos dentro de "Açaí" foi removida).
+     "Promoção do Dia" (antiga c2) e "Cardápio Açaí" (antiga c6) continuam descontinuadas
+     e removidas — ver CATEGORIAS_DESCONTINUADAS para o filtro de segurança que também
+     as oculta caso ainda existam como linhas antigas no Supabase. */
   {id:'c5',  nome:'Cardápio de Marmitas', icone:'🍱',cor:'#16A34A',ordem:1, ativo:true},
   {id:'c8',  nome:'Destaques',            icone:'⭐',cor:'#D97706',ordem:2, ativo:true},
-  {id:'c4',  nome:'Açaí',                 icone:'🍧',cor:'#7C3AED',ordem:3, ativo:true},
-  {id:'c1',  nome:'Combo Marmitex + Açaí',icone:'🎁',cor:'#6B21A8',ordem:4, ativo:true},
-  {id:'c10', nome:'Pedido Fitness',       icone:'💪',cor:'#16A34A',ordem:5, ativo:true},
-  {id:'c7',  nome:'Bebidas',              icone:'🧃',cor:'#0891B2',ordem:6, ativo:true},
-  {id:'c2',  nome:'Promoção do Dia',      icone:'🔥',cor:'#EA580C',ordem:7, ativo:true},
-  {id:'c6',  nome:'Cardápio Açaí',        icone:'🍇',cor:'#7C3AED',ordem:8, ativo:true},
+  {id:'c4',  nome:'Copos Prontos',        icone:'🍧',cor:'#7C3AED',ordem:3, ativo:true},
+  {id:'c11', nome:'Monte seu Copo',       icone:'🍧',cor:'#7C3AED',ordem:4, ativo:true},
+  {id:'c12', nome:'Batidinhas',           icone:'🥤',cor:'#7C3AED',ordem:5, ativo:true},
+  {id:'c1',  nome:'Combos',               icone:'🎁',cor:'#6B21A8',ordem:6, ativo:true},
+  {id:'c10', nome:'Pedido Fitness',       icone:'💪',cor:'#16A34A',ordem:7, ativo:true},
+  {id:'c7',  nome:'Bebidas',              icone:'🧃',cor:'#0891B2',ordem:8, ativo:true},
 ];
 const MOCK_PRODS = [
-  /* Combo Marmitex + Açaí */
-  /* ══ Combo Marmitex + Açaí (c1) ══ */
+  /* Combos (antes "Combo Marmitex + Açaí") */
+  /* ══ Combos (c1) ══ */
   {id:'p1', nome:'Marmita P + Açaí 300ml',            descricao:'Com 3 adicionais grátis',    preco:29.90,preco_promo:null,categoria_id:'c1',imagem_url:'',disponivel:true,adicionais_gratis:3,grupos_ad:['marmita','acai'],upsell_bebida:true},
   {id:'p2', nome:'Marmita G 2 proteínas + Açaí 500ml',descricao:'Com 4 adicionais grátis',   preco:49.90,preco_promo:null,categoria_id:'c1',imagem_url:'',disponivel:true,adicionais_gratis:4,grupos_ad:['marmita','acai'],upsell_bebida:true},
   {id:'p3', nome:'Marmita P + Batidinha de Açaí 300ml',descricao:'Combinação perfeita',      preco:49.90,preco_promo:null,categoria_id:'c1',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:['marmita'],upsell_bebida:true},
-  /* ══ Promoções do Dia (c2) ══ */
-  {id:'p4', nome:'Marmita P + Açaí 300 ml',           descricao:'Promoção do dia',            preco:24.99,preco_promo:null,categoria_id:'c2',imagem_url:'',disponivel:true,adicionais_gratis:3,grupos_ad:['marmita','acai'],upsell_bebida:true},
-  {id:'p4b',nome:'Marmita M + Refri Lata',             descricao:'Bebida já incluída',         preco:25.00,preco_promo:null,categoria_id:'c2',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:['marmita'],upsell_bebida:false},
-  {id:'p4c',nome:'Marmita G 2 Proteínas + Açaí 500 ml',descricao:'Promoção do dia',           preco:49.90,preco_promo:null,categoria_id:'c2',imagem_url:'',disponivel:true,adicionais_gratis:4,grupos_ad:['marmita','acai'],upsell_bebida:true},
-  {id:'p4d',nome:'Marmita P + Batidinha de Açaí 300 ml',descricao:'Promoção especial',        preco:29.90,preco_promo:null,categoria_id:'c2',imagem_url:'',disponivel:true,adicionais_gratis:3,grupos_ad:['marmita'],upsell_bebida:true},
   /* ══ Destaques (c8) ══ */
-  {id:'pd1',nome:'Marmita Média + Açaí 300 ml',  descricao:'3 adicionais grátis',          preco:29.90,preco_promo:null,categoria_id:'c8',imagem_url:'',disponivel:true,adicionais_gratis:3,destaque:true,badge:'mais_vendido',grupos_ad:['marmita','acai'],upsell_bebida:true},
+  {id:'pd1',nome:'Marmita Média + Açaí 300 ml',  descricao:'3 adicionais grátis',          preco:29.90,preco_promo:null,categoria_id:'c8',categoria_ids:['c8','c1'],imagem_url:'',disponivel:true,adicionais_gratis:3,destaque:true,badge:'mais_vendido',grupos_ad:['marmita','acai'],upsell_bebida:true},
   {id:'pd2',nome:'Açaí 500 ml',                   descricao:'4 adicionais grátis',          preco:15.99,preco_promo:null,categoria_id:'c8',imagem_url:'',disponivel:true,adicionais_gratis:4,destaque:true,badge:'favorito',grupos_ad:['acai'],upsell_bebida:true},
   {id:'pd3',nome:'Marmita + Suco Natural',         descricao:'Escolha o suco: Maracujá, Goiaba ou Abacaxi',preco:29.90,preco_promo:null,categoria_id:'c8',imagem_url:'',disponivel:true,adicionais_gratis:3,destaque:true,grupos_ad:['marmita'],upsell_bebida:false,variantes:['Maracujá','Goiaba','Abacaxi']},
   {id:'pd4',nome:'Açaí 700 ml especial',           descricao:'Produto premium — 4 adicionais grátis',preco:25.99,preco_promo:null,categoria_id:'c8',imagem_url:'',disponivel:true,adicionais_gratis:4,destaque:true,badge:'novo',grupos_ad:['acai'],upsell_bebida:true},
-  /* ══ Açaí (c4) — Copos Prontos, Batidinhas, Monte seu Copo ══ */
-  /* Copos Prontos (subgrupo: 'pronto') */
+  /* ══ Copos Prontos (c4) — apenas produtos prontos de açaí ══ */
   {id:'pa1',nome:'Encanto Mineiro',   descricao:'Açaí com banana, granola e leite condensado', preco:19.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa2',nome:'Encanto Clássico',  descricao:'Açaí tradicional com granola e morango',       preco:18.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa3',nome:'Encanto Fit',       descricao:'Açaí sem açúcar, granola e chia',              preco:18.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa4',nome:'Encanto Casadinho', descricao:'Açaí com creme de leitinho e Nutella',         preco:21.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa5',nome:'Encanto Tropical',  descricao:'Açaí com morango, banana e kiwi',              preco:19.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
-  /* Batidinhas (subgrupo: 'batidinha') */
-  /* ── Batidinhas: MODELO ANTIGO (genérico, mantido apenas como fallback — não exibido se modelo novo existir) ── */
-  {id:'pb_old1',nome:'Batidinha de Açaí 300 ml', descricao:'Batidinha cremosa de açaí',preco:19.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
-  {id:'pb_old2',nome:'Batidinha de Açaí 500 ml', descricao:'Batidinha cremosa de açaí',preco:29.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
-  /* ── Batidinhas: MODELO NOVO — 1 produto por sabor, tamanho escolhido no modal ── */
-  {id:'pb1',nome:'Tradicional',      descricao:'Batidinha cremosa de açaí',                    preco:19.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,badge:'mais_vendido',subgrupo:'batidinha',
-    tamanhos:[{label:'300 ml',preco:19.90},{label:'500 ml',preco:29.90}]},
-  {id:'pb2',nome:'Maracujá',         descricao:'Batidinha de açaí com maracujá',               preco:21.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
-    tamanhos:[{label:'300 ml',preco:21.90},{label:'500 ml',preco:31.90}]},
-  {id:'pb3',nome:'Creme de Leitinho',descricao:'Batidinha de açaí com creme de leitinho',      preco:21.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
-    tamanhos:[{label:'300 ml',preco:21.90},{label:'500 ml',preco:31.90}]},
-  {id:'pb4',nome:'Nutella',          descricao:'Batidinha de açaí com Nutella',                preco:23.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
-    tamanhos:[{label:'300 ml',preco:23.90},{label:'500 ml',preco:33.90}]},
-  /* Monte seu Copo — produto único (subgrupo: 'monte') */
-  {id:'pmc1',nome:'Monte seu Copo', descricao:'Escolha o tamanho, a base e os complementos do seu jeito',preco:14.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:3,subgrupo:'monte',
-    tamanhos:[
-      {label:'300 ml',preco:14.90,adicionais_gratis:3},
-      {label:'500 ml',preco:22.90,adicionais_gratis:5},
-      {label:'700 ml',preco:25.99,adicionais_gratis:5},
-    ],
-    bases:['Açaí Tradicional','Açaí Zero Açúcar','Cupuaçu'],
-  },
+  /* ══ Batidinhas (c12) ══ */
+  /* Modelo antigo (genérico, mantido apenas como fallback — não exibido se modelo novo existir) */
+  {id:'pb_old1',nome:'Batidinha de Açaí 300 ml', descricao:'Batidinha cremosa de açaí',preco:19.90,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
+  {id:'pb_old2',nome:'Batidinha de Açaí 500 ml', descricao:'Batidinha cremosa de açaí',preco:29.90,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
+  /* Modelo novo — 1 produto por sabor, tamanho escolhido no modal */
+  {id:'pb1',nome:'Tradicional',      descricao:'Batidinha cremosa de açaí',                    preco:18.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,badge:'mais_vendido',subgrupo:'batidinha',
+    tamanhos:[{label:'300 ml',preco:18.00},{label:'500 ml',preco:23.00}]},
+  {id:'pb2',nome:'Maracujá',         descricao:'Batidinha de açaí com maracujá',               preco:18.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+    tamanhos:[{label:'300 ml',preco:18.00},{label:'500 ml',preco:23.00}]},
+  {id:'pb3',nome:'Creme de Leitinho',descricao:'Batidinha de açaí com creme de leitinho',      preco:22.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+    tamanhos:[{label:'300 ml',preco:22.00},{label:'500 ml',preco:28.00}]},
+  {id:'pb4',nome:'Nutella',          descricao:'Batidinha de açaí com Nutella',                preco:22.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+    tamanhos:[{label:'300 ml',preco:22.00},{label:'500 ml',preco:28.00}]},
+  /* ══ Monte seu Copo (c11) — modelo novo: 1 produto por base, tamanho escolhido no modal ══
+     Mesma arquitetura/engine das Batidinhas: cada base é um produto independente com seu
+     próprio array `tamanhos` (preço + adicionais grátis por tamanho). O preço por tamanho
+     é o mesmo para as 5 bases nesta etapa ("ainda não alterar preços premium") — se algum
+     dia uma base precisar de preço diferenciado, basta sobrescrever o `tamanhos` daquele
+     produto; nenhuma mudança de código é necessária, pois a engine (ProductCard/Modal/
+     carrinho) já é 100% genérica sobre esse array. */
+  {id:'pmc1',nome:'Açaí',               descricao:'Base de açaí tradicional, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+    tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
+  {id:'pmc2',nome:'Cupuaçu',            descricao:'Base de cupuaçu cremoso, no tamanho que você escolher',    preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+    tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
+  {id:'pmc3',nome:'Açaí + Cupuaçu',     descricao:'Mistura de açaí e cupuaçu, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+    tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
+  {id:'pmc4',nome:'Açaí 0 Açúcar',      descricao:'Açaí sem adição de açúcar, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+    tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
+  {id:'pmc5',nome:'Mousse de Maracujá', descricao:'Mousse cremoso de maracujá, no tamanho que você escolher', preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+    tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
   /* Cardápio de Marmitas — Tradicional do Dia (P/M/G fixos, composição via descrição) */
   {id:'p9', nome:'Marmita P',  descricao:'Arroz • Feijão • Macarrão\nProteínas do dia: Bife acebolado • Frango grelhado',  preco:18.00,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:true,adicionais_gratis:0},
   {id:'p10',nome:'Marmita M',  descricao:'Arroz • Feijão • Macarrão\nProteínas do dia: Bife acebolado • Frango grelhado',  preco:22.00,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:true,adicionais_gratis:0},
@@ -1287,11 +1315,6 @@ const MOCK_PRODS = [
   {id:'pe4',nome:'Feijoada',         descricao:'Feijoada completa com acompanhamentos tradicionais',                  preco:36.90,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:false,adicionais_gratis:0},
   {id:'pe5',nome:'Lasanha',          descricao:'Lasanha à bolonhesa gratinada',                                        preco:28.90,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:true,adicionais_gratis:0},
   {id:'pe6',nome:'Filé de Tilápia',  descricao:'Filé de tilápia grelhado, acompanha arroz e legumes',                 preco:33.90,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:true,adicionais_gratis:0},
-  /* Cardápio Açaí */
-  {id:'p11',nome:'Açaí 300ml',                      descricao:'3 adicionais grátis',            preco:14.99,preco_promo:null,categoria_id:'c6',imagem_url:'',disponivel:true,adicionais_gratis:3},
-  {id:'p12',nome:'Açaí 500ml',                      descricao:'4 adicionais grátis',            preco:19.90,preco_promo:null,categoria_id:'c6',imagem_url:'',disponivel:true,adicionais_gratis:4},
-  {id:'p13',nome:'Açaí 700ml',                      descricao:'4 adicionais grátis',            preco:22.90,preco_promo:null,categoria_id:'c6',imagem_url:'',disponivel:true,adicionais_gratis:4},
-  {id:'p14',nome:'Marmita de Açaí',                 descricao:'Porção especial de açaí',        preco:14.99,preco_promo:null,categoria_id:'c6',imagem_url:'',disponivel:true,adicionais_gratis:0},
   /* Pedido Fitness (c10) */
   {id:'pf1',nome:'Marmita Fitness Personalizada',
     descricao:'Tamanho M — R$ 19,90',
@@ -1356,41 +1379,43 @@ const MOCK_PRODS = [
 ];
 /* ── Adicionais separados por grupo de categoria ── */
 const MOCK_ADS = [
-  /* ── Grupo: Açaí (grátis) ── */
-  {id:'ag1', nome:'Granola',           preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag2', nome:'Leite Condensado',  preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag3', nome:'Leite em Pó',       preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
+  /* ── GRÁTIS — inclusos no açaí (cota por tamanho) ── */
+  {id:'ag1', nome:'Banana',            preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
+  {id:'ag2', nome:'Granola',           preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
+  {id:'ag3', nome:'Paçoca',            preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
   {id:'ag4', nome:'Amendoim',          preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag5', nome:'Paçoca',            preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag6', nome:'Calda de Chocolate',preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag7', nome:'Calda de Morango',  preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag8', nome:'Banana',            preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  {id:'ag9', nome:'Confete',           preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
-  /* ── Grupo: Açaí (pagos) ── */
-  {id:'ap1', nome:'Morango',           preco:2.00, ativo:true, tipo:'pago',   grupo:'acai'},
-  {id:'ap2', nome:'Nutella',           preco:2.00, ativo:true, tipo:'pago',   grupo:'acai'},
-  {id:'ap3', nome:'Creme de Avelã',    preco:2.00, ativo:true, tipo:'pago',   grupo:'acai'},
-  {id:'ap4', nome:'Ovomaltine',        preco:2.00, ativo:true, tipo:'pago',   grupo:'acai'},
-  {id:'ap5', nome:'Kiwi',              preco:2.00, ativo:true, tipo:'pago',   grupo:'acai'},
+  {id:'ag5', nome:'Leite Condensado',  preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
+  {id:'ag6', nome:'Leite em Pó',       preco:0,    ativo:true, tipo:'gratis', grupo:'acai'},
+  /* ── ADICIONAIS PREMIUM — pagos ── */
+  {id:'ap1', nome:'Nutella',           preco:8.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Adicionais Premium'},
+  {id:'ap2', nome:'Creme de Avelã',    preco:6.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Adicionais Premium'},
+  {id:'ap3', nome:'Creme de Leitinho', preco:6.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Adicionais Premium'},
+  {id:'ap4', nome:'Doce de Leite',     preco:5.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Adicionais Premium'},
+  /* ── FRUTAS PREMIUM — pagas ── */
+  {id:'af1', nome:'Morango',           preco:6.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Frutas Premium'},
+  {id:'af2', nome:'Kiwi',              preco:6.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Frutas Premium'},
+  {id:'af3', nome:'Uva Verde',         preco:6.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Frutas Premium'},
+  /* ── CHOCOLATES — pagos ── */
+  {id:'ac1', nome:'Coloretti',         preco:4.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Chocolates'},
+  {id:'ac2', nome:'Ovomaltine',        preco:4.00, ativo:true, tipo:'pago', grupo:'acai', subgrupo_label:'Chocolates'},
   /* ── Grupo: Marmita — TODOS PAGOS (regra global) ── */
   {id:'amp1',nome:'Carne Extra',       preco:5.00, ativo:true, tipo:'pago',   grupo:'marmita'},
   {id:'amp2',nome:'Frango Extra',      preco:5.00, ativo:true, tipo:'pago',   grupo:'marmita'},
   {id:'amp3',nome:'Linguiça Extra',    preco:4.00, ativo:true, tipo:'pago',   grupo:'marmita'},
   {id:'amp4',nome:'Ovo',               preco:2.00, ativo:true, tipo:'pago',   grupo:'marmita'},
   {id:'amp5',nome:'Batata Frita',      preco:3.00, ativo:true, tipo:'pago',   grupo:'marmita'},
-  /* ── Grupo: Bebidas — sem adicionais por padrão ── */
 ];
 
 /* Mapa: categoria_id → grupo de adicionais */
 const CAT_ADDON_GROUP = {
-  'c1': ['acai','marmita'], /* Combo Marmitex + Açaí */
-  'c2': ['acai','marmita'], /* Promoção do Dia */
+  'c1': ['acai','marmita'], /* Combos */
   'c8': ['acai','marmita'], /* Destaques */
-  'c4': ['acai'],           /* Açaí (Copos Prontos, Batidinhas, Monte seu Copo) */
+  'c4': ['acai'],           /* Copos Prontos */
+  'c11':['acai'],           /* Monte seu Copo */
+  'c12':['acai'],           /* Batidinhas */
   'c5': ['marmita'],        /* Cardápio de Marmitas */
-  'c6': ['acai'],           /* Cardápio Açaí */
   'c7': [],                 /* Bebidas — sem adicionais */
-  'c10':['marmita'],        /* Pedido Fitness (marmita tudo pago) */
+  'c10':['marmita'],        /* Pedido Fitness */
 };
 
 /* Grátis por tamanho do açaí — 300ml=3, 500ml=4, 700ml=5 */
@@ -1439,86 +1464,21 @@ function getAdsByGrupo(allAds, prod) {
   return result; /* ex: { marmita: [...], acai: [...] } */
 }
 
-/* ── Classificação dinâmica da categoria Açaí ──────────────────
-   Agrupa produtos da categoria Açaí em 3 blocos visuais:
-   1) Copos Prontos  — renomeia automaticamente para os nomes oficiais
-   2) Batidinhas     — agrupa por sabor + tamanho dinamicamente
-   3) Monte seu Copo — consolida múltiplos produtos em um único item
-   Não depende de IDs antigos nem de campo subgrupo do banco.       */
-const COPOS_PRONTOS_OFICIAIS = [
-  'Encanto Mineiro','Encanto Clássico','Encanto Fit','Encanto Casadinho','Encanto Tropical',
-];
-/* Mapa de apelidos/variações conhecidas -> nome oficial do copo pronto */
-const COPOS_PRONTOS_ALIAS = {
-  'mineiro':'Encanto Mineiro',
-  'classico':'Encanto Clássico','clássico':'Encanto Clássico',
-  'fit':'Encanto Fit','açaí fit':'Encanto Fit','acai fit':'Encanto Fit',
-  'casadinho':'Encanto Casadinho',
-  'tropical':'Encanto Tropical','frutas':'Encanto Tropical','açaí frutas':'Encanto Tropical','acai frutas':'Encanto Tropical',
-};
 const norm = s => (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
 
-/* Sabores do modelo novo de Batidinhas — 1 produto por sabor, tamanho escolhido no modal */
-const BATIDINHA_SABORES = ['tradicional','maracuja','creme de leitinho','nutella'];
-
-function classifyAcaiProds(catProds) {
-  const prontos = [];
-  const batidinhasNovo = [];
-  const batidinhasAntigo = [];
-  let monteRepresentante = null;
-
-  catProds.forEach(p => {
-    const n = norm(p.nome);
-
-    /* 1) Monte seu Copo — consolida qualquer variação (300/500/700ml) em 1 único item */
-    if (n.includes('monte seu copo') || n.includes('monte o seu copo')) {
-      const temEstruturaCompleta = Array.isArray(p.tamanhos) && p.tamanhos.length>0;
-      if (!monteRepresentante || (temEstruturaCompleta && !monteRepresentante._completo)) {
-        monteRepresentante = {...p, nome:'🍧 Monte seu Copo', _completo:temEstruturaCompleta};
-      }
-      return;
-    }
-
-    /* 2a) Batidinhas — MODELO NOVO: produto nomeado apenas pelo sabor (Tradicional, Maracujá, Creme de Leitinho, Nutella) */
-    if (BATIDINHA_SABORES.some(s => n === s)) {
-      batidinhasNovo.push(p);
-      return;
-    }
-
-    /* 2b) Batidinhas — MODELO ANTIGO: nome genérico "Batidinha ... ml" (fallback, só usado se modelo novo não existir) */
-    if (n.includes('batidinha')) {
-      batidinhasAntigo.push(p);
-      return;
-    }
-
-    /* 3) Copos Prontos — nomes já oficiais OU reconhecidos por alias */
-    if (COPOS_PRONTOS_OFICIAIS.includes(p.nome)) {
-      prontos.push(p);
-      return;
-    }
-    for (const [alias, oficial] of Object.entries(COPOS_PRONTOS_ALIAS)) {
-      if (n.includes(alias)) {
-        prontos.push({...p, nome:oficial});
-        return;
-      }
-    }
-
-    /* Produto não classificado: cai em Copos Prontos por padrão (mantém nome original) */
-    prontos.push(p);
-  });
-
-  /* Prioriza o modelo novo de Batidinhas (1 card por sabor, tamanho no modal).
-     O modelo antigo (genérico "Batidinha ... ml") só é exibido se o modelo
-     novo não estiver presente — mantido apenas como fallback, sem ser removido. */
-  const batidinhas = batidinhasNovo.length>0 ? batidinhasNovo : batidinhasAntigo;
-
-  /* Ordem dos produtos dentro de cada bloco (Copos Prontos, Batidinhas) é a mesma
-     ordem em que chegaram do Supabase (coluna 'ordem', já aplicada em DS.getProds).
-     Nenhuma reordenação adicional é aplicada aqui. */
-
-  const monte = monteRepresentante ? [(() => { const {_completo, ...rest} = monteRepresentante; return rest; })()] : [];
-  return { prontos, batidinhas, monte };
-}
+/* ── Categorias descontinuadas ──────────────────────────────────
+   "Promoção do Dia" e "Cardápio Açaí" foram removidas permanentemente
+   da loja. Este filtro garante que elas nunca apareçam para o cliente
+   mesmo que a linha ainda exista no Supabase (ex.: admin ainda não
+   excluiu manualmente) — comparação por nome normalizado, já que os
+   IDs reais do banco não são os mesmos dos mocks ('c2'/'c6').
+   Não afeta o Admin Panel: lá o restaurante continua vendo e podendo
+   excluir essas categorias normalmente via DS.getAllCats(). ────────── */
+const CATEGORIAS_DESCONTINUADAS = [
+  'promocao do dia','promocoes do dia',
+  'cardapio de acai','cardapio acai',
+];
+const isCategoriaDescontinuada = cat => CATEGORIAS_DESCONTINUADAS.includes(norm(cat?.nome));
 
 /* ── DataService ─────────────────────────────────────────────── */
 const DS = {
@@ -1538,17 +1498,21 @@ const DS = {
     return r.error ? null : (r.data ?? []);
   },
   async getProds(catId, search) {
-    /* Faz join com categorias para trazer o nome da categoria junto com o produto */
+    /* Faz join com categorias para trazer o nome da categoria junto com o produto.
+       Sempre busca todos os produtos disponíveis e filtra no cliente para suportar
+       o campo categoria_ids (array de múltiplas categorias) sem alterar o schema. */
     const r = await this.run(d=>{
       let q = d.from('products')
         .select('*, categories(id, nome, icone, cor)')
         .eq('disponivel', true);
-      if (catId)  q = q.eq('categoria_id', catId);
       if (search) q = q.ilike('nome', `%${search}%`);
       return q.order('ordem', { ascending: true });
     });
     if (r.error && r.error.message !== 'offline') console.warn('[DS] getProds error:', r.error.message);
-    return r.error ? null : (r.data ?? []);
+    if (r.error) return null;
+    const data = r.data ?? [];
+    /* Filtro de categoria no cliente — suporta categoria_id (legado) e categoria_ids (novo) */
+    return catId ? data.filter(p => prodInCat(p, catId)) : data;
   },
   async getAllProds() {
     const r = await this.run(d=>d.from('products').select('*, categories(id, nome, icone, cor)').order('nome'));
@@ -1639,8 +1603,9 @@ function useCategories() {
     setLoading(true);
     const data = await DS.getCats();
     if (data !== null) {
-      /* Banco respondeu (data pode ser [] ou [...]): usar dados do Supabase */
-      const result = data.length > 0 ? data : MOCK_CATS;
+      /* Banco respondeu (data pode ser [] ou [...]): usar dados do Supabase.
+         Filtra categorias descontinuadas mesmo que ainda existam no banco. */
+      const result = (data.length > 0 ? data : MOCK_CATS).filter(c => !isCategoriaDescontinuada(c));
       setCats(result);
       setSrc(data.length > 0 ? 'supabase' : 'mock');
       if (data.length > 0) {
@@ -1651,7 +1616,7 @@ function useCategories() {
     } else {
       /* null = Supabase offline ou erro de rede */
       console.warn('[Encanto] ⚠️ Supabase offline — categorias usando fallback local');
-      setCats(MOCK_CATS);
+      setCats(MOCK_CATS.filter(c => !isCategoriaDescontinuada(c)));
       setSrc('mock');
     }
     setLoading(false);
@@ -1665,9 +1630,35 @@ const _prodCache = new Map();
 
 function filterMock(catId, search) {
   let m = [...MOCK_PRODS];
-  if (catId)  m = m.filter(p => p.categoria_id === catId);
+  if (catId)  m = m.filter(p => prodInCat(p, catId));
   if (search) m = m.filter(p => p.nome.toLowerCase().includes((search||'').toLowerCase()));
   return m;
+}
+
+/* ── prodInCat ────────────────────────────────────────────────────────────────
+   Verifica se um produto pertence a uma categoria.
+   Suporta dois formatos (retrocompatível):
+     - LEGADO:   { categoria_id: 'c1' }
+     - NOVO:     { categoria_id: 'c1', categoria_ids: ['c1','c8'] }
+   Um produto com categoria_ids pertence a TODAS as categorias listadas.
+   Um produto sem categoria_ids é tratado como { categoria_ids: [categoria_id] }.
+──────────────────────────────────────────────────────────────────────────── */
+function prodInCat(prod, catId) {
+  if (!catId) return true;
+  if (Array.isArray(prod.categoria_ids) && prod.categoria_ids.length>0) {
+    return prod.categoria_ids.includes(catId);
+  }
+  return prod.categoria_id === catId;
+}
+
+/* ── getProdCatIds ─────────────────────────────────────────────────────────
+   Retorna o array de todas as categorias de um produto.
+──────────────────────────────────────────────────────────────────────────── */
+function getProdCatIds(prod) {
+  if (Array.isArray(prod.categoria_ids) && prod.categoria_ids.length>0) {
+    return prod.categoria_ids;
+  }
+  return [prod.categoria_id].filter(Boolean);
 }
 
 function useProducts(catId, search) {
@@ -1781,6 +1772,7 @@ const BADGE_MAP = {
 const ProductCard = React.memo(function ProductCard({ prod, catNome, onOpen }) {
   const promo = prod.preco_promo && Number(prod.preco_promo) < Number(prod.preco);
   const badge = prod.badge ? BADGE_MAP[prod.badge] : null;
+  const temTamanhos = Array.isArray(prod.tamanhos) && prod.tamanhos.length>0;
   // Valida URL: aceita apenas http/https, nunca base64 ou string vazia
   const hasValidImg = prod.imagem_url
     && typeof prod.imagem_url === 'string'
@@ -1807,8 +1799,17 @@ const ProductCard = React.memo(function ProductCard({ prod, catNome, onOpen }) {
         {prod.descricao && <div className="product-desc">{prod.descricao}</div>}
         <div className="product-footer">
           <div className="product-price">
-            {promo && <span className="old-price">{fmt(prod.preco)}</span>}
-            {fmt(prod.preco_promo||prod.preco)}
+            {temTamanhos ? (
+              <>
+                <span className="price-from-label">A partir de</span>
+                {fmt(precoApartir(prod))}
+              </>
+            ) : (
+              <>
+                {promo && <span className="old-price">{fmt(prod.preco)}</span>}
+                {fmt(prod.preco_promo||prod.preco)}
+              </>
+            )}
           </div>
           <button className="add-btn" onClick={e=>{e.stopPropagation();console.log('[ENCANTO] Botao + clicado:', prod.id, prod.nome); onOpen(prod);}}>+</button>
         </div>
@@ -1828,15 +1829,13 @@ function ProductModalInner({ prod, catNome, adicionais, onClose, onAdd, onSugges
   const [sel,      setSel]      = useState([]);
   const [obs,      setObs]      = useState('');
   const [variante, setVariante] = useState('');
-  const [tamanho,  setTamanho]  = useState(null); /* Monte seu Copo: objeto {label,preco,adicionais_gratis} */
-  const [base,     setBase]     = useState('');   /* Monte seu Copo: 'Açaí Tradicional' | 'Açaí Zero Açúcar' | 'Cupuaçu' */
+  const [tamanho,  setTamanho]  = useState(null); /* Produtos com tamanhos: Monte seu Copo, Batidinhas — objeto {label,preco,adicionais_gratis} */
   if (!prod) return null;
 
   /* ── Grupos de adicionais separados por tipo ── */
   const adsByGrupo  = getAdsByGrupo(adicionais, prod);
   const grupos      = Object.keys(adsByGrupo);
   const temTamanhos = Array.isArray(prod.tamanhos) && prod.tamanhos.length>0;
-  const temBases    = Array.isArray(prod.bases) && prod.bases.length>0;
   const gratis_max  = temTamanhos
     ? Number((tamanho||prod.tamanhos[0])?.adicionais_gratis ?? prod.adicionais_gratis ?? 0)
     : Number(prod.adicionais_gratis || 0);
@@ -1892,7 +1891,7 @@ function ProductModalInner({ prod, catNome, adicionais, onClose, onAdd, onSugges
           {prod.descricao && <div className="modal-desc">{prod.descricao}</div>}
           <div className="modal-price">{fmt(temTamanhos ? (tamanho||prod.tamanhos[0]).preco : (prod.preco_promo||prod.preco))}</div>
 
-          {/* ── Monte seu Copo: seleção de tamanho (obrigatório) ── */}
+          {/* ── Seleção de tamanho (obrigatório) — Monte seu Copo, Batidinhas ── */}
           {temTamanhos && (
             <div className="modal-section">
               <div className="modal-section-title">
@@ -1912,32 +1911,6 @@ function ProductModalInner({ prod, catNome, adicionais, onClose, onAdd, onSugges
                       transition:'all .15s',
                     }}>
                     {t.label} • {fmt(t.preco)}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── Monte seu Copo: seleção da base (obrigatório) ── */}
-          {temTamanhos && temBases && (
-            <div className="modal-section">
-              <div className="modal-section-title">
-                🍧 Escolha a base
-                <span style={{fontSize:11,color:'var(--orange)',marginLeft:8,fontWeight:600}}>Obrigatório</span>
-              </div>
-              <div style={{display:'flex',gap:8,flexWrap:'wrap',marginTop:4}}>
-                {prod.bases.map(b=>(
-                  <button key={b}
-                    onClick={()=>setBase(b)}
-                    style={{
-                      padding:'8px 16px',borderRadius:20,cursor:'pointer',
-                      border:`2px solid ${base===b?'var(--grape)':'var(--gray-200)'}`,
-                      background:base===b?'var(--grape-pale)':'var(--white)',
-                      color:base===b?'var(--grape)':'var(--gray-600)',
-                      fontSize:13,fontWeight:700,fontFamily:'var(--font-body)',
-                      transition:'all .15s',
-                    }}>
-                    {b}
                   </button>
                 ))}
               </div>
@@ -2017,30 +1990,44 @@ function ProductModalInner({ prod, catNome, adicionais, onClose, onAdd, onSugges
                     </span>
                   </div>
                 ))}
-                {/* Pagos deste grupo */}
-                {pagosList.length>0 && (
-                  <>
-                    <div style={{fontSize:12,fontWeight:800,color:'#DC2626',
-                      textTransform:'uppercase',letterSpacing:'.5px',
-                      margin:'14px 0 6px',padding:'6px 10px',
-                      background:'#FEF2F2',borderRadius:7,
-                      border:'1.5px solid #FECACA',
-                      display:'flex',alignItems:'center',gap:5}}>
-                      <span style={{fontSize:14}}>⚠️</span> Adicionais pagos
-                    </div>
-                    {pagosList.map(ad=>(
-                      <div key={ad.id} className="additional-item" onClick={()=>toggle(ad)}>
-                        <div className={`additional-check ${sel.find(a=>a.id===ad.id)?'checked':''}`}>
-                          {sel.find(a=>a.id===ad.id)&&'✓'}
-                        </div>
-                        <div className="additional-info">
-                          <div className="additional-name">{ad.nome}</div>
-                          <div className="additional-price">+{fmt(ad.preco||2.00)}</div>
-                        </div>
-                      </div>
-                    ))}
-                  </>
-                )}
+                {/* Pagos deste grupo — subdivididos por subgrupo_label quando disponível */}
+                {pagosList.length>0 && (() => {
+                  /* Agrupar por subgrupo_label preservando a ordem de inserção */
+                  const subgrupos = [];
+                  const subgrupoMap = {};
+                  pagosList.forEach(ad => {
+                    const sg = ad.subgrupo_label || '⚠️ Adicionais pagos';
+                    if (!subgrupoMap[sg]) { subgrupoMap[sg]=[]; subgrupos.push(sg); }
+                    subgrupoMap[sg].push(ad);
+                  });
+                  return (
+                    <>
+                      {subgrupos.map(sg => (
+                        <React.Fragment key={sg}>
+                          <div style={{fontSize:12,fontWeight:800,color:'#DC2626',
+                            textTransform:'uppercase',letterSpacing:'.5px',
+                            margin:'14px 0 6px',padding:'6px 10px',
+                            background:'#FEF2F2',borderRadius:7,
+                            border:'1.5px solid #FECACA',
+                            display:'flex',alignItems:'center',gap:5}}>
+                            <span style={{fontSize:14}}>⚠️</span> {sg}
+                          </div>
+                          {subgrupoMap[sg].map(ad=>(
+                            <div key={ad.id} className="additional-item" onClick={()=>toggle(ad)}>
+                              <div className={`additional-check ${sel.find(a=>a.id===ad.id)?'checked':''}`}>
+                                {sel.find(a=>a.id===ad.id)&&'✓'}
+                              </div>
+                              <div className="additional-info">
+                                <div className="additional-name">{ad.nome}</div>
+                                <div className="additional-price">+{fmt(ad.preco||2.00)}</div>
+                              </div>
+                            </div>
+                          ))}
+                        </React.Fragment>
+                      ))}
+                    </>
+                  );
+                })()}
               </div>
             );
           })}
@@ -2097,16 +2084,11 @@ function ProductModalInner({ prod, catNome, adicionais, onClose, onAdd, onSugges
               }
               const varLabel = variantesArr.some(v=>/\d+\s*ml/i.test(v)) ? 'Tamanho' : 'Sabor';
 
-              /* ── Produtos com tamanhos (Batidinhas) e/ou bases (Monte seu Copo): validar obrigatórios ── */
-              if (temBases && !base) { alert('Escolha a base antes de continuar!'); return; }
-
               let obsCompleto = variante ? `[${varLabel}: ${variante}]${obs?' — '+obs:''}` : obs;
               let prodParaCarrinho = prod;
               if (temTamanhos) {
                 const tSel = tamanho || prod.tamanhos[0];
-                const partes = [`Tamanho: ${tSel.label}`];
-                if (temBases) partes.push(`Base: ${base}`);
-                obsCompleto = `[${partes.join(' • ')}]${obs?' — '+obs:''}`;
+                obsCompleto = `[Tamanho: ${tSel.label}]${obs?' — '+obs:''}`;
                 /* Preço do item refletindo o tamanho escolhido */
                 prodParaCarrinho = {...prod, preco: tSel.preco, preco_promo: null};
               }
@@ -3970,7 +3952,6 @@ function SearchBar({ cats, search, setSearch, setSelCat }) {
     const n = (nome||'').toLowerCase();
     if (n.includes('combo'))     return 'sec-combos';
     if (n.includes('batidinha')) return 'sec-batidinha';
-    if (n.includes('promo'))     return 'sec-promos';
     if (n.includes('destaque'))  return 'sec-destaques';
     if (n.includes('monte'))     return 'sec-monte';
     if (n.includes('pronto'))    return 'sec-prontos';
@@ -4085,15 +4066,15 @@ function StoreApp({ onAdmin }) {
   const adicionais = useAdicionais();
 
   const catMap = useMemo(()=>{ const m={}; cats.forEach(c=>{m[c.id]=c;}); return m; },[cats]);
-  const prods  = useMemo(()=>rawProds.map(p=>({...p,_catNome:catMap[p.categoria_id]?.nome||''})),[rawProds,catMap]);
+  const prods  = useMemo(()=>rawProds.map(p=>({
+    ...p,
+    _catNome: catMap[p.categoria_id]?.nome||'',
+    /* _catIds: array de todas as categorias do produto (para uso interno) */
+    _catIds: getProdCatIds(p),
+  })),[rawProds,catMap]);
 
   if (page==='checkout') return <CheckoutPage cart={cart} onBack={()=>setPage('home')} onSuccess={msg=>{setWaMsg(msg);setPage('success');}}/>;
   if (page==='success')  return <SuccessPage  msg={waMsg} cart={cart} onBack={()=>setPage('home')}/>;
-
-  /* Combos: sempre categoria c1 (Combo Marmitex + Açaí) */
-  const combos = rawProds.filter(p=>p.categoria_id==='c1'&&p.disponivel!==false);
-  /* Promoções: categoria c2 (Promoção do Dia) */
-  const promos = rawProds.filter(p=>p.categoria_id==='c2'&&p.disponivel!==false);
 
   return (
     <div className="app">
@@ -4333,12 +4314,9 @@ function StoreApp({ onAdmin }) {
                 /* Mapeia categoria → id da seção para scroll */
                 const secId = (() => {
                   if (nome.includes('combo'))     return 'sec-combos';
-                  if (nome.includes('promo'))     return 'sec-promos';
                   if (nome.includes('fitness'))   return 'sec-fitness';
-              if (nome.includes('batidinha')) return 'sec-batidinha';
-                  if (nome.includes('fitness'))   return 'sec-fitness';
-              if (nome.includes('batidinha')) return 'sec-batidinha';
-              if (nome.includes('destaque'))  return 'sec-destaques';
+                  if (nome.includes('batidinha')) return 'sec-batidinha';
+                  if (nome.includes('destaque'))  return 'sec-destaques';
                   if (nome.includes('monte'))     return 'sec-monte';
                   if (nome.includes('pronto'))    return 'sec-prontos';
                   if (nome.includes('marmita'))   return 'sec-marmitas';
@@ -4369,14 +4347,6 @@ function StoreApp({ onAdmin }) {
                       <rect x="29" y="31" width="6" height="2" rx="1" fill="#1D4ED8"/>
                       <rect x="30" y="8"  width="4" height="6" rx="1" fill="#6B7280"/>
                       <rect x="28" y="13" width="8" height="2" rx="1" fill="#9CA3AF"/>
-                    </svg>
-                  );
-                  if (nome.includes('promo')) return (
-                    <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M8 8 H30 L40 24 L30 40 H8 Z" fill="#FEF9C3"/>
-                      <circle cx="14" cy="14" r="3" fill="#F59E0B"/>
-                      <text x="17" y="29" fontFamily="Arial" fontWeight="800" fontSize="14" fill="#DC2626">%</text>
-                      <path d="M35 6 L37 11 L42 9 L38 14 L43 16 L37 17 L39 22 L34 18 L32 23 L31 17 L26 19 L30 14 L25 11 L31 11 Z" fill="#FBBF24"/>
                     </svg>
                   );
                   if (nome.includes('monte')) return (
@@ -4536,7 +4506,7 @@ function StoreApp({ onAdmin }) {
           {/* ── CATÁLOGO — ordem 100% controlada por cats (coluna 'ordem' do Supabase) ── */}
           {!selCat&&cats.map(cat=>{
             const nome = (cat.nome||'').toLowerCase();
-            const catProds = rawProds.filter(p=>p.categoria_id===cat.id && p.disponivel!==false);
+            const catProds = rawProds.filter(p=>prodInCat(p, cat.id) && p.disponivel!==false);
             if (catProds.length===0) return null;
 
             /* Estilos especiais por categoria — preservados exatamente como antes */
@@ -4552,11 +4522,8 @@ function StoreApp({ onAdmin }) {
               bannerStyle = {margin:'0 16px 12px',cursor:'default',
                 background:'linear-gradient(120deg,#B45309 0%,#D97706 100%)',
                 boxShadow:'0 4px 12px rgba(180,83,9,.25)'};
-            } else if (nome.includes('promo')) {
-              secId = 'sec-promos'; title = 'Promoções do dia';
-              sectionStyle = {paddingTop:20,scrollMarginTop:16};
             } else if (nome.includes('combo')) {
-              secId = 'sec-combos'; title = 'Combo Marmitex + Açaí';
+              secId = 'sec-combos'; title = 'Combos';
               sectionStyle = {paddingTop:20,scrollMarginTop:20};
             } else if (nome.includes('fitness')) {
               secId = 'sec-fitness'; title = '💪 Pedido Fitness';
@@ -4566,42 +4533,12 @@ function StoreApp({ onAdmin }) {
                 boxShadow:'0 4px 12px rgba(21,128,61,.25)'};
             } else if (nome.includes('marmita')) {
               secId = 'sec-marmitas';
-            } else if (nome.includes('açaí') || nome.includes('acai')) {
-              /* ── Categoria Açaí unificada: 3 blocos visuais (Copos Prontos / Batidinhas / Monte seu Copo) ── */
-              const { prontos, batidinhas, monte } = classifyAcaiProds(catProds);
-              return (
-                <LazySection key={cat.id} id="sec-acai" style={{paddingTop:20,scrollMarginTop:20}}>
-                  <div className="products-section">
-                    <div className="promo-banner" style={{margin:'0 16px 12px',cursor:'default'}}>
-                      <h3>🍧 Açaí</h3>
-                    </div>
-                    {prontos.length>0 && (
-                      <>
-                        <div className="section-title" style={{margin:'0 16px 10px'}}>🍨 Copos Prontos</div>
-                        <div className="products-grid" style={{marginBottom:20}}>
-                          {prontos.map(p=><ProductCard key={p.id} prod={{...p,_catNome:cat.nome}} catNome={cat.nome} onOpen={setModal}/>)}
-                        </div>
-                      </>
-                    )}
-                    {batidinhas.length>0 && (
-                      <>
-                        <div className="section-title" style={{margin:'0 16px 10px'}}>🥤 Batidinhas</div>
-                        <div className="products-grid" style={{marginBottom:20}}>
-                          {batidinhas.map(p=><ProductCard key={p.id} prod={{...p,_catNome:cat.nome}} catNome={cat.nome} onOpen={setModal}/>)}
-                        </div>
-                      </>
-                    )}
-                    {monte.length>0 && (
-                      <>
-                        <div className="section-title" style={{margin:'0 16px 10px'}}>🍧 Monte seu Copo</div>
-                        <div className="products-grid" style={{marginBottom:20}}>
-                          {monte.map(p=><ProductCard key={p.id} prod={{...p,_catNome:cat.nome}} catNome={cat.nome} onOpen={setModal}/>)}
-                        </div>
-                      </>
-                    )}
-                  </div>
-                </LazySection>
-              );
+            } else if (nome.includes('pronto') || (nome.includes('copo') && !nome.includes('monte'))) {
+              secId = 'sec-prontos';
+            } else if (nome.includes('monte')) {
+              secId = 'sec-monte';
+            } else if (nome.includes('batidinha')) {
+              secId = 'sec-batidinha';
             } else if (nome.includes('bebida')) {
               secId = 'sec-bebidas';
             }
