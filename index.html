@@ -1661,18 +1661,41 @@ function getProdCatIds(prod) {
   return [prod.categoria_id].filter(Boolean);
 }
 
+/* ── _deriveFromAllCache ───────────────────────────────────────────────────
+   Quando o cache global ('*::') já está populado com todos os produtos do
+   Supabase, derivamos o subconjunto por categoria/busca diretamente dele.
+   Isso garante que, ao clicar em qualquer categoria (inclusive novas criadas
+   no banco como c8, c9), o usuário veja os produtos imediatamente sem um
+   segundo round-trip e sem recair no mock local (que usa ids diferentes).
+──────────────────────────────────────────────────────────────────────────── */
+function _deriveFromAllCache(catId, search) {
+  const all = _prodCache.get('*::');
+  if (!all) return null; /* cache frio — sem dado a derivar */
+  let result = all;
+  if (catId)  result = result.filter(p => prodInCat(p, catId));
+  if (search) result = result.filter(p => (p.nome||'').toLowerCase().includes(search.toLowerCase()));
+  return result;
+}
+
 function useProducts(catId, search) {
   const cacheKey = `${catId||'*'}::${search||''}`;
 
-  /* Iniciar com dados do cache (Supabase) ou mock enquanto busca */
-  const [prods,   setProds]   = useState(()=> _prodCache.get(cacheKey) || filterMock(catId, search));
-  const [loading, setLoading] = useState(!_prodCache.has(cacheKey));
-  const [src,     setSrc]     = useState(_prodCache.has(cacheKey) ? 'cache' : 'mock');
+  /* Inicialização: tenta cache exato → deriva do cache global → fallback mock */
+  const [prods,   setProds]   = useState(()=>
+    _prodCache.get(cacheKey) ||
+    _deriveFromAllCache(catId, search) ||
+    filterMock(catId, search)
+  );
+  const [loading, setLoading] = useState(!_prodCache.has(cacheKey) && !_prodCache.has('*::'));
+  const [src,     setSrc]     = useState(
+    _prodCache.has(cacheKey) ? 'cache' :
+    _prodCache.has('*::')    ? 'cache' : 'mock'
+  );
 
   useEffect(()=>{
     const key = `${catId||'*'}::${search||''}`;
 
-    /* Cache hit: usar imediatamente */
+    /* Cache exato: usar imediatamente */
     if (_prodCache.has(key)) {
       setProds(_prodCache.get(key));
       setSrc('cache');
@@ -1680,25 +1703,39 @@ function useProducts(catId, search) {
       return;
     }
 
-    /* Sem cache: exibir mock como placeholder e buscar Supabase */
+    /* Cache global aquecido: derivar sem ir ao Supabase de novo */
+    const derived = _deriveFromAllCache(catId, search);
+    if (derived) {
+      setProds(derived);
+      setSrc('cache');
+      setLoading(false);
+      _prodCache.set(key, derived); /* guarda para próximas renders */
+      return;
+    }
+
+    /* Cache frio: exibir mock como placeholder e buscar Supabase */
     setProds(filterMock(catId, search));
     setSrc('mock');
+    setLoading(true);
 
     let live = true;
     DS.getProds(catId, search).then(data => {
       if (!live) return;
       if (data !== null) {
-        /* data = [] ou [...] — banco respondeu com sucesso */
+        /* Banco respondeu: guardar em cache e exibir */
         _prodCache.set(key, data);
         setProds(data);
         setSrc('supabase');
         if (!catId && !search) {
-          console.log(`[Encanto] ✅ ${data.length} products carregados do Supabase`);
+          /* Cache global aqueceu agora: pre-popular caches por categoria para
+             evitar mocks na próxima vez que o usuário clicar em qualquer chip */
+          console.log(`[Encanto] ✅ ${data.length} produtos carregados do Supabase`);
           if (data[0]) console.log('[Encanto] Amostra:', data[0].nome, '| imagem_url:', data[0].imagem_url || '(sem imagem)');
         }
       } else {
-        /* null = offline/erro — manter mock */
-        console.warn('[Encanto] ⚠️ Supabase offline — products usando fallback local');
+        /* Offline/erro — manter placeholder */
+        console.warn('[Encanto] ⚠️ Supabase offline — produtos usando fallback local');
+        setProds(filterMock(catId, search));
       }
       setLoading(false);
     });
@@ -4580,31 +4617,37 @@ function StoreApp({ onAdmin }) {
           {(()=>{
             const cat = cats.find(c=>c.id===selCat);
             const nome = cat?.nome || '';
+            /* Re-filtrar dos rawProds (todos os produtos já carregados do Supabase)
+               para garantir que categorias novas do banco apareçam imediatamente sem
+               depender do cache por categoria ou de um segundo fetch. */
+            const catProds = rawProds.filter(p=>prodInCat(p, selCat) && p.disponivel!==false);
             return (
-              <div style={{margin:'0 16px 12px',display:'flex',alignItems:'center',gap:10}}>
-                <div className="promo-banner" style={{flex:1,margin:0,cursor:'default'}}>
-                  <h3>{cat?.icone||'🍽️'} {nome}</h3>
+              <>
+                <div style={{margin:'0 16px 12px',display:'flex',alignItems:'center',gap:10}}>
+                  <div className="promo-banner" style={{flex:1,margin:0,cursor:'default'}}>
+                    <h3>{cat?.icone||'🍽️'} {nome}</h3>
+                  </div>
+                  <button
+                    onClick={()=>setSelCat(null)}
+                    style={{
+                      flexShrink:0,padding:'8px 14px',borderRadius:10,
+                      background:'var(--gray-100)',color:'var(--gray-600)',
+                      fontSize:13,fontWeight:700,border:'none',cursor:'pointer',
+                      fontFamily:'var(--font-body)',whiteSpace:'nowrap',
+                    }}>
+                    ← Todos
+                  </button>
                 </div>
-                <button
-                  onClick={()=>setSelCat(null)}
-                  style={{
-                    flexShrink:0,padding:'8px 14px',borderRadius:10,
-                    background:'var(--gray-100)',color:'var(--gray-600)',
-                    fontSize:13,fontWeight:700,border:'none',cursor:'pointer',
-                    fontFamily:'var(--font-body)',whiteSpace:'nowrap',
-                  }}>
-                  ← Todos
-                </button>
-              </div>
+                {loading?<Spinner/>:catProds.length===0?(
+                  <div className="empty-state"><div className="icon">🔍</div><p>Nenhum produto encontrado</p></div>
+                ):(
+                  <div className="products-grid">
+                    {catProds.map(p=><ProductCard key={p.id} prod={{...p,_catNome:cats.find(c=>c.id===p.categoria_id)?.nome||''}} catNome={cats.find(c=>c.id===p.categoria_id)?.nome||''} onOpen={setModal}/>)}
+                  </div>
+                )}
+              </>
             );
           })()}
-          {loading?<Spinner/>:prods.length===0?(
-            <div className="empty-state"><div className="icon">🔍</div><p>Nenhum produto encontrado</p></div>
-          ):(
-            <div className="products-grid">
-              {prods.map(p=><ProductCard key={p.id} prod={p} catNome={p._catNome} onOpen={setModal}/>)}
-            </div>
-          )}
         </div>
       )}
 
