@@ -1241,7 +1241,7 @@ const MOCK_CATS = [
      1 Cardápio de Marmitas, 2 Destaques, 3 Copos Prontos, 4 Monte seu Copo,
      5 Batidinhas, 6 Combos, 7 Pedido Fitness, 8 Bebidas.
      "Açaí" foi renomeada para "Copos Prontos" (mesmo id 'c4', só o nome mudou).
-     "Monte seu Copo" (c11) e "Batidinhas" (c12) são categorias independentes — os
+     "Monte seu Copo" (c3) e "Batidinhas" (c9) são categorias independentes — os
      produtos já foram migrados para elas (ver MOCK_PRODS) e cada uma é renderizada
      pela mesma seção genérica usada por todas as outras categorias, sem agrupamento
      especial (a antiga lógica de 3 blocos dentro de "Açaí" foi removida).
@@ -1251,8 +1251,8 @@ const MOCK_CATS = [
   {id:'c5',  nome:'Cardápio de Marmitas', icone:'🍱',cor:'#16A34A',ordem:1, ativo:true},
   {id:'c8',  nome:'Destaques',            icone:'⭐',cor:'#D97706',ordem:2, ativo:true},
   {id:'c4',  nome:'Copos Prontos',        icone:'🍧',cor:'#7C3AED',ordem:3, ativo:true},
-  {id:'c11', nome:'Monte seu Copo',       icone:'🍧',cor:'#7C3AED',ordem:4, ativo:true},
-  {id:'c12', nome:'Batidinhas',           icone:'🥤',cor:'#7C3AED',ordem:5, ativo:true},
+  {id:'c3', nome:'Monte seu Copo',       icone:'🍧',cor:'#7C3AED',ordem:4, ativo:true},
+  {id:'c9', nome:'Batidinhas',           icone:'🥤',cor:'#7C3AED',ordem:5, ativo:true},
   {id:'c1',  nome:'Combos',               icone:'🎁',cor:'#6B21A8',ordem:6, ativo:true},
   {id:'c10', nome:'Pedido Fitness',       icone:'💪',cor:'#16A34A',ordem:7, ativo:true},
   {id:'c7',  nome:'Bebidas',              icone:'🧃',cor:'#0891B2',ordem:8, ativo:true},
@@ -1274,35 +1274,35 @@ const MOCK_PRODS = [
   {id:'pa3',nome:'Encanto Fit',       descricao:'Açaí sem açúcar, granola e chia',              preco:18.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa4',nome:'Encanto Casadinho', descricao:'Açaí com creme de leitinho e Nutella',         preco:21.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
   {id:'pa5',nome:'Encanto Tropical',  descricao:'Açaí com morango, banana e kiwi',              preco:19.90,preco_promo:null,categoria_id:'c4',imagem_url:'',disponivel:true,adicionais_gratis:0,subgrupo:'pronto'},
-  /* ══ Batidinhas (c12) ══ */
+  /* ══ Batidinhas (c9) ══ */
   /* Modelo antigo (genérico, mantido apenas como fallback — não exibido se modelo novo existir) */
-  {id:'pb_old1',nome:'Batidinha de Açaí 300 ml', descricao:'Batidinha cremosa de açaí',preco:19.90,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
-  {id:'pb_old2',nome:'Batidinha de Açaí 500 ml', descricao:'Batidinha cremosa de açaí',preco:29.90,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
+  {id:'pb_old1',nome:'Batidinha de Açaí 300 ml', descricao:'Batidinha cremosa de açaí',preco:19.90,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
+  {id:'pb_old2',nome:'Batidinha de Açaí 500 ml', descricao:'Batidinha cremosa de açaí',preco:29.90,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha'},
   /* Modelo novo — 1 produto por sabor, tamanho escolhido no modal */
-  {id:'pb1',nome:'Tradicional',      descricao:'Batidinha cremosa de açaí',                    preco:18.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,badge:'mais_vendido',subgrupo:'batidinha',
+  {id:'pb1',nome:'Tradicional',      descricao:'Batidinha cremosa de açaí',                    preco:18.00,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,badge:'mais_vendido',subgrupo:'batidinha',
     tamanhos:[{label:'300 ml',preco:18.00},{label:'500 ml',preco:23.00}]},
-  {id:'pb2',nome:'Maracujá',         descricao:'Batidinha de açaí com maracujá',               preco:18.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+  {id:'pb2',nome:'Maracujá',         descricao:'Batidinha de açaí com maracujá',               preco:18.00,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
     tamanhos:[{label:'300 ml',preco:18.00},{label:'500 ml',preco:23.00}]},
-  {id:'pb3',nome:'Creme de Leitinho',descricao:'Batidinha de açaí com creme de leitinho',      preco:22.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+  {id:'pb3',nome:'Creme de Leitinho',descricao:'Batidinha de açaí com creme de leitinho',      preco:22.00,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
     tamanhos:[{label:'300 ml',preco:22.00},{label:'500 ml',preco:28.00}]},
-  {id:'pb4',nome:'Nutella',          descricao:'Batidinha de açaí com Nutella',                preco:22.00,preco_promo:null,categoria_id:'c12',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
+  {id:'pb4',nome:'Nutella',          descricao:'Batidinha de açaí com Nutella',                preco:22.00,preco_promo:null,categoria_id:'c9',imagem_url:'',disponivel:true,adicionais_gratis:0,grupos_ad:[],upsell_bebida:false,subgrupo:'batidinha',
     tamanhos:[{label:'300 ml',preco:22.00},{label:'500 ml',preco:28.00}]},
-  /* ══ Monte seu Copo (c11) — modelo novo: 1 produto por base, tamanho escolhido no modal ══
+  /* ══ Monte seu Copo (c3) — modelo novo: 1 produto por base, tamanho escolhido no modal ══
      Mesma arquitetura/engine das Batidinhas: cada base é um produto independente com seu
      próprio array `tamanhos` (preço + adicionais grátis por tamanho). O preço por tamanho
      é o mesmo para as 5 bases nesta etapa ("ainda não alterar preços premium") — se algum
      dia uma base precisar de preço diferenciado, basta sobrescrever o `tamanhos` daquele
      produto; nenhuma mudança de código é necessária, pois a engine (ProductCard/Modal/
      carrinho) já é 100% genérica sobre esse array. */
-  {id:'pmc1',nome:'Açaí',               descricao:'Base de açaí tradicional, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+  {id:'pmc1',nome:'Açaí',               descricao:'Base de açaí tradicional, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c3',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
     tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
-  {id:'pmc2',nome:'Cupuaçu',            descricao:'Base de cupuaçu cremoso, no tamanho que você escolher',    preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+  {id:'pmc2',nome:'Cupuaçu',            descricao:'Base de cupuaçu cremoso, no tamanho que você escolher',    preco:17.99,preco_promo:null,categoria_id:'c3',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
     tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
-  {id:'pmc3',nome:'Açaí + Cupuaçu',     descricao:'Mistura de açaí e cupuaçu, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+  {id:'pmc3',nome:'Açaí + Cupuaçu',     descricao:'Mistura de açaí e cupuaçu, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c3',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
     tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
-  {id:'pmc4',nome:'Açaí 0 Açúcar',      descricao:'Açaí sem adição de açúcar, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+  {id:'pmc4',nome:'Açaí 0 Açúcar',      descricao:'Açaí sem adição de açúcar, no tamanho que você escolher',  preco:17.99,preco_promo:null,categoria_id:'c3',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
     tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
-  {id:'pmc5',nome:'Mousse de Maracujá', descricao:'Mousse cremoso de maracujá, no tamanho que você escolher', preco:17.99,preco_promo:null,categoria_id:'c11',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
+  {id:'pmc5',nome:'Mousse de Maracujá', descricao:'Mousse cremoso de maracujá, no tamanho que você escolher', preco:17.99,preco_promo:null,categoria_id:'c3',imagem_url:'',disponivel:true,adicionais_gratis:2,subgrupo:'monte',
     tamanhos:[{label:'300 ml',preco:17.99,adicionais_gratis:2},{label:'500 ml',preco:26.99,adicionais_gratis:3},{label:'700 ml',preco:35.99,adicionais_gratis:4}]},
   /* Cardápio de Marmitas — Tradicional do Dia (P/M/G fixos, composição via descrição) */
   {id:'p9', nome:'Marmita P',  descricao:'Arroz • Feijão • Macarrão\nProteínas do dia: Bife acebolado • Frango grelhado',  preco:18.00,preco_promo:null,categoria_id:'c5',imagem_url:'',disponivel:true,adicionais_gratis:0},
@@ -1411,8 +1411,8 @@ const CAT_ADDON_GROUP = {
   'c1': ['acai','marmita'], /* Combos */
   'c8': ['acai','marmita'], /* Destaques */
   'c4': ['acai'],           /* Copos Prontos */
-  'c11':['acai'],           /* Monte seu Copo */
-  'c12':['acai'],           /* Batidinhas */
+  'c3':['acai'],           /* Monte seu Copo */
+  'c9':['acai'],           /* Batidinhas */
   'c5': ['marmita'],        /* Cardápio de Marmitas */
   'c7': [],                 /* Bebidas — sem adicionais */
   'c10':['marmita'],        /* Pedido Fitness */
@@ -1661,41 +1661,18 @@ function getProdCatIds(prod) {
   return [prod.categoria_id].filter(Boolean);
 }
 
-/* ── _deriveFromAllCache ───────────────────────────────────────────────────
-   Quando o cache global ('*::') já está populado com todos os produtos do
-   Supabase, derivamos o subconjunto por categoria/busca diretamente dele.
-   Isso garante que, ao clicar em qualquer categoria (inclusive novas criadas
-   no banco como c8, c9), o usuário veja os produtos imediatamente sem um
-   segundo round-trip e sem recair no mock local (que usa ids diferentes).
-──────────────────────────────────────────────────────────────────────────── */
-function _deriveFromAllCache(catId, search) {
-  const all = _prodCache.get('*::');
-  if (!all) return null; /* cache frio — sem dado a derivar */
-  let result = all;
-  if (catId)  result = result.filter(p => prodInCat(p, catId));
-  if (search) result = result.filter(p => (p.nome||'').toLowerCase().includes(search.toLowerCase()));
-  return result;
-}
-
 function useProducts(catId, search) {
   const cacheKey = `${catId||'*'}::${search||''}`;
 
-  /* Inicialização: tenta cache exato → deriva do cache global → fallback mock */
-  const [prods,   setProds]   = useState(()=>
-    _prodCache.get(cacheKey) ||
-    _deriveFromAllCache(catId, search) ||
-    filterMock(catId, search)
-  );
-  const [loading, setLoading] = useState(!_prodCache.has(cacheKey) && !_prodCache.has('*::'));
-  const [src,     setSrc]     = useState(
-    _prodCache.has(cacheKey) ? 'cache' :
-    _prodCache.has('*::')    ? 'cache' : 'mock'
-  );
+  /* Iniciar com dados do cache (Supabase) ou mock enquanto busca */
+  const [prods,   setProds]   = useState(()=> _prodCache.get(cacheKey) || filterMock(catId, search));
+  const [loading, setLoading] = useState(!_prodCache.has(cacheKey));
+  const [src,     setSrc]     = useState(_prodCache.has(cacheKey) ? 'cache' : 'mock');
 
   useEffect(()=>{
     const key = `${catId||'*'}::${search||''}`;
 
-    /* Cache exato: usar imediatamente */
+    /* Cache hit: usar imediatamente */
     if (_prodCache.has(key)) {
       setProds(_prodCache.get(key));
       setSrc('cache');
@@ -1703,39 +1680,25 @@ function useProducts(catId, search) {
       return;
     }
 
-    /* Cache global aquecido: derivar sem ir ao Supabase de novo */
-    const derived = _deriveFromAllCache(catId, search);
-    if (derived) {
-      setProds(derived);
-      setSrc('cache');
-      setLoading(false);
-      _prodCache.set(key, derived); /* guarda para próximas renders */
-      return;
-    }
-
-    /* Cache frio: exibir mock como placeholder e buscar Supabase */
+    /* Sem cache: exibir mock como placeholder e buscar Supabase */
     setProds(filterMock(catId, search));
     setSrc('mock');
-    setLoading(true);
 
     let live = true;
     DS.getProds(catId, search).then(data => {
       if (!live) return;
       if (data !== null) {
-        /* Banco respondeu: guardar em cache e exibir */
+        /* data = [] ou [...] — banco respondeu com sucesso */
         _prodCache.set(key, data);
         setProds(data);
         setSrc('supabase');
         if (!catId && !search) {
-          /* Cache global aqueceu agora: pre-popular caches por categoria para
-             evitar mocks na próxima vez que o usuário clicar em qualquer chip */
-          console.log(`[Encanto] ✅ ${data.length} produtos carregados do Supabase`);
+          console.log(`[Encanto] ✅ ${data.length} products carregados do Supabase`);
           if (data[0]) console.log('[Encanto] Amostra:', data[0].nome, '| imagem_url:', data[0].imagem_url || '(sem imagem)');
         }
       } else {
-        /* Offline/erro — manter placeholder */
-        console.warn('[Encanto] ⚠️ Supabase offline — produtos usando fallback local');
-        setProds(filterMock(catId, search));
+        /* null = offline/erro — manter mock */
+        console.warn('[Encanto] ⚠️ Supabase offline — products usando fallback local');
       }
       setLoading(false);
     });
@@ -4617,37 +4580,31 @@ function StoreApp({ onAdmin }) {
           {(()=>{
             const cat = cats.find(c=>c.id===selCat);
             const nome = cat?.nome || '';
-            /* Re-filtrar dos rawProds (todos os produtos já carregados do Supabase)
-               para garantir que categorias novas do banco apareçam imediatamente sem
-               depender do cache por categoria ou de um segundo fetch. */
-            const catProds = rawProds.filter(p=>prodInCat(p, selCat) && p.disponivel!==false);
             return (
-              <>
-                <div style={{margin:'0 16px 12px',display:'flex',alignItems:'center',gap:10}}>
-                  <div className="promo-banner" style={{flex:1,margin:0,cursor:'default'}}>
-                    <h3>{cat?.icone||'🍽️'} {nome}</h3>
-                  </div>
-                  <button
-                    onClick={()=>setSelCat(null)}
-                    style={{
-                      flexShrink:0,padding:'8px 14px',borderRadius:10,
-                      background:'var(--gray-100)',color:'var(--gray-600)',
-                      fontSize:13,fontWeight:700,border:'none',cursor:'pointer',
-                      fontFamily:'var(--font-body)',whiteSpace:'nowrap',
-                    }}>
-                    ← Todos
-                  </button>
+              <div style={{margin:'0 16px 12px',display:'flex',alignItems:'center',gap:10}}>
+                <div className="promo-banner" style={{flex:1,margin:0,cursor:'default'}}>
+                  <h3>{cat?.icone||'🍽️'} {nome}</h3>
                 </div>
-                {loading?<Spinner/>:catProds.length===0?(
-                  <div className="empty-state"><div className="icon">🔍</div><p>Nenhum produto encontrado</p></div>
-                ):(
-                  <div className="products-grid">
-                    {catProds.map(p=><ProductCard key={p.id} prod={{...p,_catNome:cats.find(c=>c.id===p.categoria_id)?.nome||''}} catNome={cats.find(c=>c.id===p.categoria_id)?.nome||''} onOpen={setModal}/>)}
-                  </div>
-                )}
-              </>
+                <button
+                  onClick={()=>setSelCat(null)}
+                  style={{
+                    flexShrink:0,padding:'8px 14px',borderRadius:10,
+                    background:'var(--gray-100)',color:'var(--gray-600)',
+                    fontSize:13,fontWeight:700,border:'none',cursor:'pointer',
+                    fontFamily:'var(--font-body)',whiteSpace:'nowrap',
+                  }}>
+                  ← Todos
+                </button>
+              </div>
             );
           })()}
+          {loading?<Spinner/>:prods.length===0?(
+            <div className="empty-state"><div className="icon">🔍</div><p>Nenhum produto encontrado</p></div>
+          ):(
+            <div className="products-grid">
+              {prods.map(p=><ProductCard key={p.id} prod={p} catNome={p._catNome} onOpen={setModal}/>)}
+            </div>
+          )}
         </div>
       )}
 
